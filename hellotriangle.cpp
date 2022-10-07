@@ -22,15 +22,18 @@ void processInput(GLFWwindow *window) {
 //     -0.5f, 0.5f,  0.0f  // top left
 // };
 
-float vertices[] = {
+float vertices_a[] = {
     // first triangle
     -0.5f, -0.5f, 0.0f, // bottom left
      0.0f, -0.5f, 0.0f, // bottom center
      0.0f,  0.5f, 0.0f, // top center
+};
+
+float vertices_b[] = {
     // second triangle
-     0.5f, -0.5f, 0.0f, // bottom right
-     0.0f, -0.5f, 0.0f, // bottom center
-     0.0f,  0.5f, 0.0f, // top center
+    0.5f, -0.5f, 0.0f, // bottom right
+    0.0f, -0.5f, 0.0f, // bottom center
+    0.0f,  0.5f, 0.0f, // top center
 };
 
 
@@ -104,22 +107,17 @@ unsigned int setupShaderProgram() {
   return shaderProgram;
 }
 
-// void setupVertexArrayObject(unsigned int &VAO, unsigned int &VBO, unsigned int &EBO) {
-void setupVertexArrayObject(unsigned int &VAO, unsigned int &VBO) {
+void setupVertexArrayObject(unsigned int &VAO, float *vertices, long vertices_size) {
+  unsigned int VBO;
   glGenVertexArrays(1, &VAO);
   glGenBuffers(1, &VBO);
-  // glGenBuffers(1, &EBO);
 
   // 1. Bind Vertex Array Object.
   glBindVertexArray(VAO);
 
   // 2. Copy our vertices array into a buffer for OpenGL to use.
   glBindBuffer(GL_ARRAY_BUFFER, VBO);
-  glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-  // 3. Copy our index array into an element buffer for OpenGL to use.
-  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-  // glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+  glBufferData(GL_ARRAY_BUFFER, vertices_size, vertices, GL_STATIC_DRAW);
 
   // 3. Then set our vertex attribute pointers.
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
@@ -131,12 +129,15 @@ void setupVertexArrayObject(unsigned int &VAO, unsigned int &VBO) {
 
   // Unbind the VAO. You can unbind the VAO afterwards so other VAO calls won't accidentally modify
   // this VAO, but this rarely happens. Modifying other VAOs requires a call to glBindVertexArray
-  // anyways so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
+  // anyway, so we generally don't unbind VAOs (nor VBOs) when it's not directly necessary.
   glBindVertexArray(0);
+}
 
-  // Unbind the EBO. This must come after unbinding the VAO since a bound VAO stores binds and
-  // unbinds of GL_ELEMENT_ARRAY_BUFFER.
-  // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+// void setupVertexArrayObject(unsigned int &VAO, unsigned int &VBO, unsigned int &EBO) {
+// void setupVertexArrayObject(unsigned int &VAO, unsigned int &VBO) {
+void setupVertexArrayObjects(unsigned int &VAO1, unsigned int &VAO2) {
+  setupVertexArrayObject(VAO1, vertices_a, sizeof(vertices_a));
+  setupVertexArrayObject(VAO2, vertices_b, sizeof(vertices_b));
 }
 
 int main() {
@@ -164,8 +165,8 @@ int main() {
 
   unsigned int shaderProgram = setupShaderProgram();
 
-  unsigned int VAO, VBO; //, EBO;
-  setupVertexArrayObject(VAO, VBO/*, EBO*/);
+  unsigned int VAO1, VAO2; //, VBO1; //, EBO;
+  setupVertexArrayObjects(VAO1, VAO2/*, EBO*/);
 
   while (!glfwWindowShouldClose(window)) {
     processInput(window);
@@ -173,17 +174,18 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(shaderProgram);
-    glBindVertexArray(VAO);
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
 
-    glDrawArrays(GL_TRIANGLES, 0, 6);
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glUseProgram(shaderProgram);
+
+    glBindVertexArray(VAO1);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+    glBindVertexArray(VAO2);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glBindVertexArray(0);
+
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
