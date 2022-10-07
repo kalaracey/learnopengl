@@ -1,4 +1,5 @@
 #include "common.h"
+#include <cmath>
 
 float vertices[] = {-0.5f, -0.5f, 0.0f, //
                     0.5f,  -0.5f, 0.0f, //
@@ -20,10 +21,10 @@ const char *fragmentShaderSource = R"(
 #version 330 core
 out vec4 FragColor;
 
-in vec4 vertexColor; // The input variable from the vertex shader (same name and same type).
+uniform vec4 ourColor; // we set this variable in the OpenGL code.
 
 void main() {
-  FragColor = vertexColor;
+  FragColor = ourColor;
 }
 )";
 
@@ -102,7 +103,14 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // Activate the shader before setting the uniform.
     glUseProgram(shaderProgram);
+
+    float timeValue = glfwGetTime();
+    float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+    int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+    glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 3);
   });
