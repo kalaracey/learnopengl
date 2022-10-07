@@ -25,17 +25,16 @@ void processInput(GLFWwindow *window) {
 float vertices_a[] = {
     // first triangle
     -0.5f, -0.5f, 0.0f, // bottom left
-     0.0f, -0.5f, 0.0f, // bottom center
-     0.0f,  0.5f, 0.0f, // top center
+    0.0f,  -0.5f, 0.0f, // bottom center
+    0.0f,  0.5f,  0.0f, // top center
 };
 
 float vertices_b[] = {
     // second triangle
     0.5f, -0.5f, 0.0f, // bottom right
     0.0f, -0.5f, 0.0f, // bottom center
-    0.0f,  0.5f, 0.0f, // top center
+    0.0f, 0.5f,  0.0f, // top center
 };
-
 
 // unsigned int indices[] = {
 //     // note that we start from 0!
@@ -50,12 +49,19 @@ const char *vertexShaderSource = "#version 330 core\n"
                                  "   gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);\n"
                                  "}\0";
 
-const char *fragmentShaderSource = "#version 330 core\n"
+const char *fragmentShaderSourceOrange = "#version 330 core\n"
                                    "out vec4 FragColor;\n"
                                    "void main()\n"
                                    "{\n"
                                    "  FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
                                    "}\0";
+
+const char *fragmentShaderSourceYellow = "#version 330 core\n"
+                                         "out vec4 FragColor;\n"
+                                         "void main()\n"
+                                         "{\n"
+                                         "  FragColor = vec4(255/255.0f, 191/255.0f, 0/255.0f, 1.0f);\n"
+                                         "}\0";
 
 void checkShaderCompilationStatus(unsigned int shader, const std::string &name) {
   int success;
@@ -77,7 +83,7 @@ unsigned int setupVertexShader() {
   return vertexShader;
 }
 
-unsigned int setupFragmentShader() {
+unsigned int setupFragmentShader(const char *fragmentShaderSource) {
   unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragmentShader, 1, &fragmentShaderSource, NULL);
   glCompileShader(fragmentShader);
@@ -85,8 +91,8 @@ unsigned int setupFragmentShader() {
   return fragmentShader;
 }
 
-unsigned int setupShaderProgram() {
-  unsigned int vertexShader = setupVertexShader(), fragmentShader = setupFragmentShader();
+unsigned int setupShaderProgram(const char *fragmentShaderSource) {
+  unsigned int vertexShader = setupVertexShader(), fragmentShader = setupFragmentShader(fragmentShaderSource);
 
   unsigned int shaderProgram = glCreateProgram();
   glAttachShader(shaderProgram, vertexShader);
@@ -163,10 +169,11 @@ int main() {
 
   //    glViewport(0, 0, 800, 600);
 
-  unsigned int shaderProgram = setupShaderProgram();
+  unsigned int orangeShaderProgram = setupShaderProgram(fragmentShaderSourceOrange);
+  unsigned int yellowShaderProgram = setupShaderProgram(fragmentShaderSourceYellow);
 
   unsigned int VAO1, VAO2; //, VBO1; //, EBO;
-  setupVertexArrayObjects(VAO1, VAO2/*, EBO*/);
+  setupVertexArrayObjects(VAO1, VAO2 /*, EBO*/);
 
   while (!glfwWindowShouldClose(window)) {
     processInput(window);
@@ -174,18 +181,20 @@ int main() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    glUseProgram(shaderProgram);
+    glUseProgram(orangeShaderProgram);
 
     glBindVertexArray(VAO1);
     glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glUseProgram(yellowShaderProgram);
     glBindVertexArray(VAO2);
     glDrawArrays(GL_TRIANGLES, 0, 3);
 
     glBindVertexArray(0);
 
-    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    // glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     glfwSwapBuffers(window);
     glfwPollEvents();
