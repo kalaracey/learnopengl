@@ -20,3 +20,7 @@ link_libraries(common shader)
 add_executable(hellowindow hellowindow.cpp)
 add_executable(hellotriangle hellotriangle.cpp)
 add_executable(shaders shaders.cpp)
+
+add_library(stb_image third_party/stb_image.cpp)
+link_libraries(stb_image)
+add_executable(textures textures.cpp)
