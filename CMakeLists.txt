@@ -24,3 +24,9 @@ add_executable(shaders shaders.cpp)
 add_library(stb_image third_party/stb_image.cpp)
 link_libraries(stb_image)
 add_executable(textures textures.cpp)
+
+find_package(GLM REQUIRED)
+include_directories("${GLM_INCLUDE_DIRS}")
+link_libraries(glm::glm)
+add_executable(transformations transformations.cpp)
+
