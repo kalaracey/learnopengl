@@ -45,7 +45,6 @@ int main() {
 
   Shader shader("/Users/kal/Code/learnopengl/vertex_shader.glsl",
                 "/Users/kal/Code/learnopengl/fragment_shader.glsl");
-  // unsigned int shaderProgram = setupShaderProgram();
 
   unsigned int VAO, VBO;
   setupVertexArrayObject(VAO, VBO);
@@ -62,6 +61,8 @@ int main() {
     // float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
     // int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
     // glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
+    shader.setFloat("offset", 0.25);
 
     glBindVertexArray(VAO);
     glDrawArrays(GL_TRIANGLES, 0, 3);
