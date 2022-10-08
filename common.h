@@ -3,32 +3,11 @@
 
 #include <iostream>
 
-// clang-format off
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-// clang-format on
+#include "opengl.h"
 
-void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, int width, int height) {
-  glViewport(0, 0, width, height);
-}
+void checkShaderCompilationStatus(unsigned int shader, const std::string &name);
 
-void processInput(GLFWwindow *window) {
-  if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
-    glfwSetWindowShouldClose(window, true);
-  }
-}
-
-void checkShaderCompilationStatus(unsigned int shader, const std::string &name) {
-  int success;
-  char infoLog[512];
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-
-  if (!success) {
-    glGetShaderInfoLog(shader, 512, NULL, infoLog);
-    std::cout << "shader compilation failed: " << name << ": " << infoLog << std::endl;
-    exit(EXIT_FAILURE);
-  }
-}
+unsigned int createShader(const char *source, GLenum shaderType, const std::string &name);
 
 class GlfwApplication {
 public:
@@ -74,7 +53,18 @@ public:
   }
 
 private:
-  GlfwApplication(GLFWwindow *window) : window_(window) {}
+  explicit GlfwApplication(GLFWwindow *window) : window_(window) {}
+
+  static void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, int width,
+                                        int height) {
+    glViewport(0, 0, width, height);
+  }
+
+  static void processInput(GLFWwindow *window) {
+    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+      glfwSetWindowShouldClose(window, true);
+    }
+  }
 
   GLFWwindow *window_;
 };
