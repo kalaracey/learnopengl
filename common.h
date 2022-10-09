@@ -2,6 +2,7 @@
 #define LEARNOPENGL_GLFW_COMMON_H
 
 #include <iostream>
+#include <unordered_map>
 
 #include "opengl.h"
 
@@ -11,7 +12,7 @@ unsigned int createShader(const char *source, GLenum shaderType, const std::stri
 
 class GlfwApplication {
 public:
-  static std::unique_ptr<GlfwApplication> create() {
+  static std::unique_ptr<GlfwApplication> Create() {
     glfwInit();
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -21,7 +22,7 @@ public:
 
     GLFWwindow *window = glfwCreateWindow(800, 600, "LearnOpenGL", NULL, NULL);
     if (window == NULL) {
-      std::cerr << "Failed to create GLFW window" << std::endl;
+      std::cerr << "Failed to Create GLFW window" << std::endl;
       glfwTerminate();
       return nullptr;
     }
@@ -42,7 +43,7 @@ public:
 
   ~GlfwApplication() { glfwTerminate(); }
 
-  void run(const std::function<void()> &draw) {
+  void Run(const std::function<void()> &draw) {
     while (!glfwWindowShouldClose(window_)) {
       processInput(window_);
 
@@ -53,6 +54,9 @@ public:
     }
   }
 
+  /** The lifetime of callback must exceed the lifetime of GlfwApplication. */
+  void OnKey(int glfw_key, std::function<void()> callback) { key_callbacks_[glfw_key] = callback; }
+
 private:
   explicit GlfwApplication(GLFWwindow *window) : window_(window) {}
 
@@ -61,13 +65,19 @@ private:
     glViewport(0, 0, width, height);
   }
 
-  static void processInput(GLFWwindow *window) {
+  void processInput(GLFWwindow *window) {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
       glfwSetWindowShouldClose(window, true);
+    }
+    for (const auto &[key, callback] : key_callbacks_) {
+      if (glfwGetKey(window, key) == GLFW_PRESS) {
+        callback();
+      }
     }
   }
 
   GLFWwindow *window_;
+  std::unordered_map<int, std::function<void()>> key_callbacks_;
 };
 
 #endif // LEARNOPENGL_GLFW_COMMON_H

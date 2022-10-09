@@ -41,7 +41,7 @@ void setupVertexArrayObject(unsigned int &VAO, unsigned int &VBO) {
 }
 
 int main() {
-  auto app = GlfwApplication::create();
+  auto app = GlfwApplication::Create();
 
   Shader shader("/Users/kal/Code/learnopengl/vertex_shader.glsl",
                 "/Users/kal/Code/learnopengl/fragment_shader.glsl");
@@ -49,7 +49,7 @@ int main() {
   unsigned int VAO, VBO;
   setupVertexArrayObject(VAO, VBO);
 
-  app->run([&]() {
+  app->Run([&]() {
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 

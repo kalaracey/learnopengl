@@ -113,7 +113,7 @@ void setupVertexArrayObject(unsigned int &VAO, unsigned int &VBO /*, unsigned in
 }
 
 int main() {
-  auto app = GlfwApplication::create();
+  auto app = GlfwApplication::Create();
 
   Shader shader("/Users/kal/Code/learnopengl/vertex_shader.glsl",
                 "/Users/kal/Code/learnopengl/fragment_shader.glsl");
@@ -161,7 +161,29 @@ int main() {
 
   glEnable(GL_DEPTH_TEST);
 
-  app->run([&]() {
+  float deltaTime = 0.0f; // Time between current frame and last frame.
+  float lastFrame = 0.0f; // Time of last frame.
+
+  glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+  glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+  glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+  const float baseCameraSpeed = 2.5f;
+  auto cameraSpeed = [&]() { return baseCameraSpeed * deltaTime; };
+
+  app->OnKey(GLFW_KEY_W, [&]() { cameraPos += cameraSpeed() * cameraFront; });
+  app->OnKey(GLFW_KEY_S, [&]() { cameraPos -= cameraSpeed() * cameraFront; });
+  app->OnKey(GLFW_KEY_A, [&]() {
+    cameraPos -= cameraSpeed() * glm::normalize(glm::cross(cameraFront, cameraUp));
+  });
+  app->OnKey(GLFW_KEY_D, [&]() {
+    cameraPos += cameraSpeed() * glm::normalize(glm::cross(cameraFront, cameraUp));
+  });
+
+  app->Run([&]() {
+    float currentFrame = glfwGetTime();
+    deltaTime = currentFrame - lastFrame;
+    lastFrame = currentFrame;
+
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -190,11 +212,12 @@ int main() {
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     for (unsigned int i = 0; i < 10; i++) {
-      const float radius = 10.0f;
-      float camX = sin(glfwGetTime()) * radius;
-      float camZ = cos(glfwGetTime()) * radius;
-      glm::mat4 view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0),
-                                   glm::vec3(0.0, 1.0, 0.0));
+      // const float radius = 10.0f;
+      // float camX = sin(glfwGetTime()) * radius;
+      // float camZ = cos(glfwGetTime()) * radius;
+      // glm::mat4 view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0),
+      //                              glm::vec3(0.0, 1.0, 0.0));
+      glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
       shader.set("view", view);
 
       glm::mat4 model = glm::mat4(1.0f);

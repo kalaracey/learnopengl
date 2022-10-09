@@ -3,7 +3,7 @@
 
    Do this:
       #define STB_IMAGE_IMPLEMENTATION
-   before you include this file in *one* C or C++ file to create the implementation.
+   before you include this file in *one* C or C++ file to Create the implementation.
 
    // i.e. it should look like this:
    #include ...
@@ -261,7 +261,7 @@ RECENT REVISION HISTORY:
 // (The old do-it-yourself SIMD API is no longer supported in the current
 // code.)
 //
-// On x86, SSE2 will automatically be used when available based on a run-time
+// On x86, SSE2 will automatically be used when available based on a Run-time
 // test; if not, the generic C versions are used as a fall-back. On ARM targets,
 // the typical path is to have separate builds for NEON and non-NEON devices
 // (at least this is true for iOS and Android). Therefore, the NEON support is
@@ -293,7 +293,7 @@ RECENT REVISION HISTORY:
 //    float *data = stbi_loadf(filename, &x, &y, &n, 0);
 //
 // If you load LDR images through this interface, those images will
-// be promoted to floating point values, run through the inverse of
+// be promoted to floating point values, Run through the inverse of
 // constants corresponding to the above:
 //
 //     stbi_ldr_to_hdr_scale(1.0f);
@@ -4872,7 +4872,7 @@ static int stbi__paeth(int a, int b, int c) {
 
 static const stbi_uc stbi__depth_scale_table[9] = {0, 0xff, 0x55, 0, 0x11, 0, 0, 0, 0x01};
 
-// create the png data from post-deflated data
+// Create the png data from post-deflated data
 static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 raw_len, int out_n,
                                       stbi__uint32 x, stbi__uint32 y, int depth, int color) {
   int bytes = (depth == 16 ? 2 : 1);
@@ -7671,7 +7671,7 @@ static float *stbi__hdr_load(stbi__context *s, int *x, int *y, int *comp, int re
       c2 = stbi__get8(s);
       len = stbi__get8(s);
       if (c1 != 2 || c2 != 2 || (len & 0x80)) {
-        // not run-length encoded, so we have to actually use THIS data as a decoded
+        // not Run-length encoded, so we have to actually use THIS data as a decoded
         // pixel (note this can't be a valid pixel--one of RGB must be >= 128)
         stbi_uc rgbe[4];
         rgbe[0] = (stbi_uc)c1;
@@ -8228,7 +8228,7 @@ STBIDEF int stbi_is_16_bit_from_callbacks(stbi_io_callbacks const *c, void *user
                          disable raw_len validation;
                          documentation fixes
       2.15  (2017-03-18) fix png-1,2,4 bug; now all Imagenet JPGs decode;
-                         warning fixes; disable run-time SSE detection on gcc;
+                         warning fixes; disable Run-time SSE detection on gcc;
                          uniform handling of optional "return" values;
                          thread-safe initialization of zlib tables
       2.14  (2017-03-03) remove deprecated STBI_JPEG_OLD; fixes for Imagenet JPGs
