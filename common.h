@@ -27,8 +27,7 @@ public:
       return nullptr;
     }
     glfwMakeContextCurrent(window);
-    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
-
+    glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
       std::cerr << "Failed to initialize GLAD" << std::endl;
       return nullptr;
@@ -54,14 +53,32 @@ public:
     }
   }
 
-  /** The lifetime of callback must exceed the lifetime of GlfwApplication. */
   void OnKey(int glfw_key, std::function<void()> callback) { key_callbacks_[glfw_key] = callback; }
 
-private:
-  explicit GlfwApplication(GLFWwindow *window) : window_(window) {}
+  void OnMouse(std::function<void(double, double)> callback) {
+    mouse_callback_ = callback;
+    glfwSetCursorPosCallback(window_, [](GLFWwindow *w, double x, double y) {
+      auto app = static_cast<GlfwApplication *>(glfwGetWindowUserPointer(w));
+      (*app->mouse_callback_)(x, y);
+    });
+  }
 
-  static void framebuffer_size_callback([[maybe_unused]] GLFWwindow *window, int width,
-                                        int height) {
+  void OnScroll(std::function<void(double, double)> callback) {
+    scroll_callback_ = callback;
+    glfwSetScrollCallback(window_, [](GLFWwindow *w, double x, double y) {
+      auto app = static_cast<GlfwApplication *>(glfwGetWindowUserPointer(w));
+      (*app->scroll_callback_)(x, y);
+    });
+  }
+
+  void DisableCursor() { glfwSetInputMode(window_, GLFW_CURSOR, GLFW_CURSOR_DISABLED); }
+
+private:
+  explicit GlfwApplication(GLFWwindow *window) : window_(window) {
+    glfwSetWindowUserPointer(window_, this);
+  }
+
+  static void FramebufferSizeCallback([[maybe_unused]] GLFWwindow *window, int width, int height) {
     glViewport(0, 0, width, height);
   }
 
@@ -78,6 +95,8 @@ private:
 
   GLFWwindow *window_;
   std::unordered_map<int, std::function<void()>> key_callbacks_;
+  std::optional<std::function<void(double, double)>> mouse_callback_;
+  std::optional<std::function<void(double, double)>> scroll_callback_;
 };
 
 #endif // LEARNOPENGL_GLFW_COMMON_H

@@ -1,6 +1,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/transform.hpp>
 
 #include "common.h"
 #include "shader.h"
@@ -165,6 +166,8 @@ int main() {
   float lastFrame = 0.0f; // Time of last frame.
 
   glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
+  // After the first mouse event, cameraFront is maintained to be a function of yaw and pitch.
+  // It is initialized to -z to match the initial yaw of 90 (see below).
   glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
   glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
   const float baseCameraSpeed = 2.5f;
@@ -177,6 +180,59 @@ int main() {
   });
   app->OnKey(GLFW_KEY_D, [&]() {
     cameraPos += cameraSpeed() * glm::normalize(glm::cross(cameraFront, cameraUp));
+  });
+
+  // https://stackoverflow.com/questions/10569659/camera-pitch-yaw-to-direction-vector
+  // Pitch and yaw of 0 correspond to (1,0,0), i.e. the default direction is +x.
+  // Default to looking in the -z direction.
+  float pitch = 0.0f, yaw = 90.0f;
+
+  app->DisableCursor();
+  // Initialize mouse position to the center of the 800x600 screen.
+  float lastX = 400, lastY = 300;
+  bool first_mouse = true;
+  app->OnMouse([&](double x, double y) {
+    if (first_mouse) {
+      lastX = x;
+      lastY = y;
+      first_mouse = false;
+    }
+    const float sensitivity = 0.1f;
+    float x_offset = sensitivity * (x - lastX);
+    float y_offset = sensitivity * (y - lastY);
+    lastX = x;
+    lastY = y;
+
+    yaw -= x_offset;
+    pitch = std::clamp(pitch - y_offset, -90.0f, 90.0f);
+
+    // First consider the cartesian point (x,y,z) in cylindrical coordinates:
+    //   x = r*cos(yaw)
+    //   y = y
+    //   z = -r*sin(yaw)
+    // where r is the radius from the origin to (x,0,z). Note that r < 1 unless y = 0, where r = 1.
+    //
+    // Let rho be the radius from the origin to (x,y,z). Consider the triangle formed by r and rho
+    // with the angle between them being the pitch. Then
+    //   r = rho*cos(pitch)
+    // and so
+    //  x = rho*cos(pitch)*cos(yaw)
+    //  y = rho*sin(pitch)
+    //  z = -rho*cos(pitch)*sin(yaw)
+    //
+    // This is not equivalent to rotating the initial direction vector (1,0,0) about the y axis
+    // by yaw and then about the (new) z axis by pitch.
+    //   R_z(pitch) * R_y(yaw) * (1,0,0)^T
+    //
+    cameraFront = glm::vec3(std::cos(glm::radians(pitch)) * std::cos(glm::radians(yaw)),
+                            std::sin(glm::radians(pitch)),
+                            std::cos(glm::radians(pitch)) * -std::sin(glm::radians(yaw)));
+  });
+
+  float fov = 45.0f;
+  app->OnScroll([&]([[maybe_unused]] double x, double y) {
+    fov -= (float)y;
+    fov = std::clamp(fov - (float)y, 0.0f, 45.0f);
   });
 
   app->Run([&]() {
@@ -194,7 +250,7 @@ int main() {
 
     // Activate the shader before setting the uniform.
     shader.use();
-    glUniform1i(glGetUniformLocation(shader.ID, "texture1"), 0);
+    shader.setInt("texture1", 0);
     shader.setInt("texture2", 1);
 
     // glm::mat4 model = glm::mat4(1.0f);
@@ -205,21 +261,16 @@ int main() {
     // view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
     // shader.set("view", view);
 
-    glm::mat4 projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
+    glm::mat4 projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
     shader.set("projection", projection);
+
+    glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    shader.set("view", view);
 
     glBindVertexArray(VAO);
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     // glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, nullptr);
     for (unsigned int i = 0; i < 10; i++) {
-      // const float radius = 10.0f;
-      // float camX = sin(glfwGetTime()) * radius;
-      // float camZ = cos(glfwGetTime()) * radius;
-      // glm::mat4 view = glm::lookAt(glm::vec3(camX, 0.0, camZ), glm::vec3(0.0, 0.0, 0.0),
-      //                              glm::vec3(0.0, 1.0, 0.0));
-      glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
-      shader.set("view", view);
-
       glm::mat4 model = glm::mat4(1.0f);
       model = glm::translate(model, cubePositions[i]);
       float angle = 20.f * i;
