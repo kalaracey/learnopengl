@@ -3,6 +3,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/transform.hpp>
 
+#include "camera.h"
 #include "common.h"
 #include "shader.h"
 #include "third_party/stb_image.h"
@@ -162,82 +163,39 @@ int main() {
 
   glEnable(GL_DEPTH_TEST);
 
-  float deltaTime = 0.0f; // Time between current frame and last frame.
-  float lastFrame = 0.0f; // Time of last frame.
+  float delta_time = 0.0f; // Time between current frame and last frame.
+  float lastFrame = 0.0f;  // Time of last frame.
 
-  glm::vec3 cameraPos = glm::vec3(0.0f, 0.0f, 3.0f);
-  // After the first mouse event, cameraFront is maintained to be a function of yaw and pitch.
-  // It is initialized to -z to match the initial yaw of 90 (see below).
-  glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-  glm::vec3 cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
-  const float baseCameraSpeed = 2.5f;
-  auto cameraSpeed = [&]() { return baseCameraSpeed * deltaTime; };
+  Camera camera(glm::vec3(0.0, 0.0, 3.0f));
 
-  app->OnKey(GLFW_KEY_W, [&]() { cameraPos += cameraSpeed() * cameraFront; });
-  app->OnKey(GLFW_KEY_S, [&]() { cameraPos -= cameraSpeed() * cameraFront; });
-  app->OnKey(GLFW_KEY_A, [&]() {
-    cameraPos -= cameraSpeed() * glm::normalize(glm::cross(cameraFront, cameraUp));
-  });
-  app->OnKey(GLFW_KEY_D, [&]() {
-    cameraPos += cameraSpeed() * glm::normalize(glm::cross(cameraFront, cameraUp));
-  });
-
-  // https://stackoverflow.com/questions/10569659/camera-pitch-yaw-to-direction-vector
-  // Pitch and yaw of 0 correspond to (1,0,0), i.e. the default direction is +x.
-  // Default to looking in the -z direction.
-  float pitch = 0.0f, yaw = 90.0f;
+  app->OnKey(GLFW_KEY_W, [&]() { camera.ProcessKeyboard(FORWARD, delta_time); });
+  app->OnKey(GLFW_KEY_S, [&]() { camera.ProcessKeyboard(BACKWARD, delta_time); });
+  app->OnKey(GLFW_KEY_A, [&]() { camera.ProcessKeyboard(LEFT, delta_time); });
+  app->OnKey(GLFW_KEY_D, [&]() { camera.ProcessKeyboard(RIGHT, delta_time); });
 
   app->DisableCursor();
   // Initialize mouse position to the center of the 800x600 screen.
-  float lastX = 400, lastY = 300;
+  float last_x = 400, last_y = 300;
   bool first_mouse = true;
   app->OnMouse([&](double x, double y) {
     if (first_mouse) {
-      lastX = x;
-      lastY = y;
+      last_x = x;
+      last_y = y;
       first_mouse = false;
     }
-    const float sensitivity = 0.1f;
-    float x_offset = sensitivity * (x - lastX);
-    float y_offset = sensitivity * (y - lastY);
-    lastX = x;
-    lastY = y;
+    float x_offset = x - last_x;
+    float y_offset = y - last_y;
+    last_x = x;
+    last_y = y;
 
-    yaw -= x_offset;
-    pitch = std::clamp(pitch - y_offset, -90.0f, 90.0f);
-
-    // First consider the cartesian point (x,y,z) in cylindrical coordinates:
-    //   x = r*cos(yaw)
-    //   y = y
-    //   z = -r*sin(yaw)
-    // where r is the radius from the origin to (x,0,z). Note that r < 1 unless y = 0, where r = 1.
-    //
-    // Let rho be the radius from the origin to (x,y,z). Consider the triangle formed by r and rho
-    // with the angle between them being the pitch. Then
-    //   r = rho*cos(pitch)
-    // and so
-    //  x = rho*cos(pitch)*cos(yaw)
-    //  y = rho*sin(pitch)
-    //  z = -rho*cos(pitch)*sin(yaw)
-    //
-    // This is not equivalent to rotating the initial direction vector (1,0,0) about the y axis
-    // by yaw and then about the (new) z axis by pitch.
-    //   R_z(pitch) * R_y(yaw) * (1,0,0)^T
-    //
-    cameraFront = glm::vec3(std::cos(glm::radians(pitch)) * std::cos(glm::radians(yaw)),
-                            std::sin(glm::radians(pitch)),
-                            std::cos(glm::radians(pitch)) * -std::sin(glm::radians(yaw)));
+    camera.ProcessMouseMovement(x_offset, y_offset);
   });
 
-  float fov = 45.0f;
-  app->OnScroll([&]([[maybe_unused]] double x, double y) {
-    fov -= (float)y;
-    fov = std::clamp(fov - (float)y, 0.0f, 45.0f);
-  });
+  app->OnScroll([&]([[maybe_unused]] double x, double y) { camera.ProcessMouseScroll(y); });
 
   app->Run([&]() {
     float currentFrame = glfwGetTime();
-    deltaTime = currentFrame - lastFrame;
+    delta_time = currentFrame - lastFrame;
     lastFrame = currentFrame;
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -253,18 +211,11 @@ int main() {
     shader.setInt("texture1", 0);
     shader.setInt("texture2", 1);
 
-    // glm::mat4 model = glm::mat4(1.0f);
-    // model = glm::rotate(model, (float)glfwGetTime(), glm::vec3(0.5f, 1.0f, 1.0f));
-    // shader.set("model", model);
-
-    // glm::mat4 view = glm::mat4(1.0f);
-    // view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f));
-    // shader.set("view", view);
-
-    glm::mat4 projection = glm::perspective(glm::radians(fov), 800.0f / 600.0f, 0.1f, 100.0f);
+    glm::mat4 projection =
+        glm::perspective(glm::radians(camera.Zoom()), 800.0f / 600.0f, 0.1f, 100.0f);
     shader.set("projection", projection);
 
-    glm::mat4 view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+    glm::mat4 view = camera.ViewMatrix();
     shader.set("view", view);
 
     glBindVertexArray(VAO);
